@@ -9,6 +9,11 @@ function FakeServer(opt) {
 
   self.assertOk = () => {
     //throw if something isn't like it should be
+    if (targets.length) {
+      console.error("TARGETS LEFT")
+      console.log(targets)
+      throw new Error("Targets left")
+    }
   }
 
   let targets = []

@@ -47,6 +47,7 @@ describe("query", () => {
       ]
       fake.addTarget("clientupdate")
       fake.addTarget("clientlist", cllist)
+      fake.addTarget("clientlist", cllist)
       const q = new Query()
       q.connectPullStream(fake.createStream(next))
       q.login("serveradmin", "pw123", err => err ? next(err) : true)
@@ -54,6 +55,7 @@ describe("query", () => {
         client_nickname: "test"
       }, err => err ? next(err) : true)
       q.cmd("clientlist", (err, res) => err ? next(err) : assert.deepEqual(cllist.map(c => c.args), res, "list differs"))
+      q.list("clientlist", ["-uid"], (err, res) => err ? next(err) : assert.deepEqual(cllist.map(c => c.args), res, "list differs"))
       q.disconnect()
     })
 
