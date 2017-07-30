@@ -185,14 +185,14 @@ function TeamSpeakQueryClient(opt) {
         } else {
           a = {
             args: a,
-            bool: []
+            bools: []
           }
         }
       })
     } else {
       res = {
         args,
-        bools: bools || []
+        bools: bools
       }
     }
     queue(cmd, res, cb)
