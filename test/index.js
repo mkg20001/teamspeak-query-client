@@ -93,6 +93,25 @@ describe("query", () => {
         event: "server"
       }, err => err ? next(err) : q.disconnect())
     })
+
+    it("should handle errors", next => {
+      let fake = new FakeServer({})
+      let testdata = {
+        bools: ["error"],
+        args: {
+          id: 2,
+          msg: "fatal"
+        }
+      }
+      fake.addTarget("servernotifyregister", testdata)
+      const q = new Query()
+      q.connectPullStream(fake.createStream(next))
+      q.cmd("servernotifyregister", {
+        event: "server"
+      }, err => expect(() => {
+        throw err
+      }).to.throw("ServerError: fatal") && q.disconnect())
+    })
   })
 })
 
