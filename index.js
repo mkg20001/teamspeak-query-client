@@ -113,7 +113,7 @@ function TeamSpeakQueryClient(opt) {
       }),
       mods.parser(),
       handler(),
-      mods.pack(),
+      mods.packer(),
       pull.map(d => {
         log("raw_out", d.startsWith("login") ? "login *** ***" : d)
         return d

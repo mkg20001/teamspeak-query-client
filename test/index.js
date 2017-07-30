@@ -27,7 +27,7 @@ describe("query", () => {
 })
 
 describe("pull", () => {
-  describe("pack", () => {
+  describe("packer", () => {
     it("should pack the login command right", () => {
       pull(
         pull.values([{
@@ -36,8 +36,28 @@ describe("pull", () => {
             bools: ["user", "pw"]
           }
         }]),
-        mod.pack(),
+        mod.packer(),
         pull.drain(res => expect(res).to.equal("login user pw"))
+      )
+    })
+    it("should pack an array", () => {
+      pull(
+        pull.values([{
+          cmd: "test",
+          args: [{
+            bools: ["t1"],
+            args: {
+              test: "1"
+            }
+          }, {
+            bools: ["t2"],
+            args: {
+              test: "2"
+            }
+          }]
+        }]),
+        mod.packer(),
+        pull.drain(res => expect(res).to.equal("test t1 test=1|t2 test=2"))
       )
     })
   })

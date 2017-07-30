@@ -98,7 +98,7 @@ function FakeServer(opt) {
       }, {
         sendMany: true
       }),
-      mod.packServer(),
+      mod.packerServer(),
       queue(function (end, data, cb) {
         if (end) return cb(end)
         if (first)
