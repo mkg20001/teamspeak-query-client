@@ -89,10 +89,8 @@ pull.parser = function Parser() {
 }
 
 pull.parserServer = function Parser() {
-  let loc = -2
   return queue(function (end, line, cb) {
     if (end) return cb(end)
-    if (loc) return cb(null, null, loc++)
     let cmd = line.split(" ").shift()
     let res = line.split(" ").slice(1).join(" ").split("|").map(line => {
       line = line.split(" ")
@@ -123,10 +121,20 @@ pull.pack = function Packer() {
     if (!Array.isArray(data.args)) data.args = [data.args]
     return cb(null, data.cmd + " " + data.args.map(data => [(data.bools || []).map(d => escaper(d, encode_re)).join(" "),
       Object.keys(data.key || {}).map(k => escaper(k, encode_re) + "=" + escaper(data.key[k], encode_re)).join(" ")
-    ].join(" ")).join("|"))
+    ].filter(e => e.length).join(" ")).join("|"))
+  })
+}
+
+pull.packServer = function Packer() {
+  return queue(function (end, data, cb) {
+    if (end) return cb(end)
+    if (!Array.isArray(data)) data = [data]
+    return cb(null, data.map(data => [(data.bools || []).map(d => escaper(d, encode_re)).join(" "),
+      Object.keys(data.args || {}).map(k => escaper(k, encode_re) + "=" + escaper(data.args[k], encode_re)).join(" ")
+    ].filter(e => e.length).join(" ")).join("|"))
   })
 }
 
 pull.joinLine = function JoinLines() {
-  return _pull.map(d => d + "\r\n")
+  return _pull.map(d => d + "\n\r")
 }
