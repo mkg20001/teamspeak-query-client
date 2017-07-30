@@ -15,7 +15,7 @@ const query = new Query({ //you can also leave this blank, then it connects to l
 query.connect(err => {
   if (err) throw err //Likely connection refused
   query.login("serveradmin", "mysecretpw", err => { //you can also skip login to opperate as guest query
-    if (err.id === 520) throw new Error("Invalid Password")
+    if (err && err.id === 520) throw new Error("Invalid Password")
     if (err) throw err //something weird happened
     query.cmd("use", 1, err => { //this is easy and works.
       if (err) throw err //likely no permissions
