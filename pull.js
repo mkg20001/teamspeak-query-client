@@ -92,7 +92,7 @@ pull.pack = function Packer() {
   return queue(function (end, data, cb) {
     if (end) return cb(end)
     if (!Array.isArray(data.args)) data.args = [data.args]
-    return cb(null, data.cmd + " " + data.args.map(data => [(data.bool || []).map(d => escaper(d, encode_re)).join(" "),
+    return cb(null, data.cmd + " " + data.args.map(data => [(data.bools || []).map(d => escaper(d, encode_re)).join(" "),
       Object.keys(data.key || {}).map(k => escaper(k, encode_re) + "=" + escaper(data.key[k], encode_re)).join(" ")
     ].join(" ")).join("|"))
   })

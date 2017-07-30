@@ -1,6 +1,6 @@
 {
   "name": "teamspeak-query-client",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "TeamSpeak Query Client that works",
   "main": "index.js",
   "scripts": {
@@ -19,5 +19,14 @@
     "pull-stream": "^3.6.0",
     "stream-to-pull-stream": "^1.7.2",
     "uuid": "^3.1.0"
-  }
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mkg20001/teamspeak-query-client.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mkg20001/teamspeak-query-client/issues"
+  },
+  "homepage": "https://github.com/mkg20001/teamspeak-query-client#readme"
 }

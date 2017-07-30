@@ -23,13 +23,11 @@ function TeamSpeakQueryClient(opt) {
     /*
     data={
       bool: [] //will be sent as is (encoded)
-      keys: {} //will be sent as encoded key=val
+      args: {} //will be sent as encoded key=val
     }
     data can also be an array that will be encoded and joined with |
     */
-    log("queued", cmd, cmd == "login" ? {
-      bool: ["**", "**"]
-    } : args)
+    log("queued", cmd, cmd == "login" ? "*" : args)
     que.push({
       data: {
         cmd,
@@ -65,12 +63,14 @@ function TeamSpeakQueryClient(opt) {
             else {
               cur.err = new Error("ServerError: " + err.msg)
               cur.err.id = err.id
-              self.emit("que:done")
             }
             cur.cb(cur.err, cur.resp)
+            cur = null
+            self.emit("que:done")
           } else { //result for command
             cur.resp = res
           }
+          return read(null, next)
         })
       },
       source: function (end, cb) {
@@ -81,7 +81,8 @@ function TeamSpeakQueryClient(opt) {
 
         function doSend() {
           cur = que.shift()
-          self.emit("que:do", cur)
+          log("sending", cur.data.cmd == "login" ? "*" : cur.data)
+          self.emit("que:do")
           return cb(null, cur.data)
         }
 
@@ -105,9 +106,17 @@ function TeamSpeakQueryClient(opt) {
       self.stream = pull( //glue it together
         stream.source,
         mods.byLine(),
+        pull.map(d => {
+          log("raw_in", d)
+          return d
+        }),
         mods.parser(),
         handler(),
         mods.pack(),
+        pull.map(d => {
+          log("raw_out", d.startsWith("login") ? "login *** ***" : d)
+          return d
+        }),
         mods.joinLine(),
         stream.sink
       )
@@ -119,8 +128,53 @@ function TeamSpeakQueryClient(opt) {
 
   self.login = (user, pw, cb) => {
     queue("login", {
-      bool: [user, pw]
+      bools: [user, pw]
     }, cb)
+  }
+
+  self.cmd = (cmd, args, bools, cb) => {
+    if (typeof bools == "function") {
+      cb = bools
+      bools = null
+    }
+    if (Array.isArray(args) && !bools) {
+      bools = args
+      args = {}
+    }
+    if (!bools) bools = []
+    if (!Array.isArray(bools)) bools = [bools]
+    if (typeof args == "number" || typeof args == "string") {
+      bools.push(args)
+      args = {}
+    }
+    let res
+    if (Array.isArray(args)) {
+      res = args.map(a => {
+        if (a.args) {
+          return a
+        } else {
+          a = {
+            args: a,
+            bool: []
+          }
+        }
+      })
+    } else {
+      res = {
+        args,
+        bools: bools || []
+      }
+    }
+    queue(cmd, res, cb)
+  }
+
+  self.list = (cmd, args, bools, cb) => {
+    self.cmd(cmd, args, bools, (err, res) => {
+      if (err) return cb(err)
+      if (!res) res = []
+      if (!Array.isArray(res)) res = [res]
+      cb(null, res)
+    })
   }
 }
 
