@@ -23,6 +23,16 @@ query.connect(err => {
         console.log(res)
       })
     })
+
+    query.cmd("servernotifyregister", { event: "server" }, err => { //subscribe to "server" events
+      if (err) {
+        throw err
+      } else {
+        query.on("cliententerview", console.log) //user has joined
+        query.on("clientleftview", console.log) //user has left
+        query.on("notify", console.log) //all the events
+      }
+    })
   })
 })
 ```

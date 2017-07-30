@@ -56,6 +56,43 @@ describe("query", () => {
       q.cmd("clientlist", (err, res) => err ? next(err) : assert.deepEqual(cllist.map(c => c.args), res, "list differs"))
       q.disconnect()
     })
+
+    it("should handle notify events", next => {
+      let fake = new FakeServer({})
+      let testdata = {
+        bools: ["notifyclientleftview"],
+        args: {
+          client_nickname: "Another guy"
+        }
+      }
+      fake.addTarget("servernotifyregister", testdata)
+      const q = new Query()
+      q.connectPullStream(fake.createStream(next))
+      q.on("clientleftview", res => {
+        assert.deepEqual(res, testdata.args, "event data does not match")
+        return q.disconnect()
+      })
+      q.cmd("servernotifyregister", {
+        event: "server"
+      }, err => err ? next(err) : true)
+    })
+
+    it("should ignore responses without requests", next => {
+      let fake = new FakeServer({})
+      let testdata = {
+        bools: ["error"],
+        args: {
+          id: 0,
+          msg: "ok"
+        }
+      }
+      fake.addTarget("servernotifyregister", testdata)
+      const q = new Query()
+      q.connectPullStream(fake.createStream(next))
+      q.cmd("servernotifyregister", {
+        event: "server"
+      }, err => err ? next(err) : q.disconnect())
+    })
   })
 })
 

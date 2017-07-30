@@ -55,6 +55,15 @@ function TeamSpeakQueryClient(opt) {
             return (ended = end)
           }
           if (ended) return read(ended = end)
+          if (res.length == 1 && Object.keys(res[0])[0].startsWith("notify")) {
+            //notify event (see "servernotifyregister" command)
+            let ev = Object.keys(res[0])[0].substr("notify".length)
+            delete res[0]["notify" + ev]
+            log("notify", ev, res[0])
+            self.emit(ev, res[0])
+            self.emit("notify", ev, res[0])
+            return read(null, next)
+          }
           if (!cur) {
             log("got response with no request", res)
             return read(end, next)
