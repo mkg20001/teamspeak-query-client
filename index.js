@@ -49,7 +49,11 @@ function TeamSpeakQueryClient(opt) {
     return {
       sink: function (read) {
         read(null, function next(end, res) {
-          if (end) return (ended = end)
+          if (end) {
+            self.connected = false
+            self.emit("disconnect")
+            return (ended = end)
+          }
           if (ended) return read(ended = end)
           if (!cur) {
             log("got response with no request", res)
@@ -98,33 +102,45 @@ function TeamSpeakQueryClient(opt) {
     }
   }
 
+  function streamConnect(stream) {
+    self.connected = true
+    self.stream = pull( //glue it together
+      stream.source,
+      mods.byLine(),
+      pull.map(d => {
+        log("raw_in", d)
+        return d
+      }),
+      mods.parser(),
+      handler(),
+      mods.pack(),
+      pull.map(d => {
+        log("raw_out", d.startsWith("login") ? "login *** ***" : d)
+        return d
+      }),
+      mods.joinLine(),
+      stream.sink
+    )
+    self.emit("connected")
+  }
+
   self.connect = cb => {
     const conn = net.connect(opt.port, opt.host, err => {
       if (err) return cb(err)
       const stream = toPull.duplex(conn)
-      self.connected = true
-      self.stream = pull( //glue it together
-        stream.source,
-        mods.byLine(),
-        pull.map(d => {
-          log("raw_in", d)
-          return d
-        }),
-        mods.parser(),
-        handler(),
-        mods.pack(),
-        pull.map(d => {
-          log("raw_out", d.startsWith("login") ? "login *** ***" : d)
-          return d
-        }),
-        mods.joinLine(),
-        stream.sink
-      )
-      self.emit("connected")
+      streamConnect(stream)
       log("connected", opt)
       cb()
     })
   }
+
+  self.disconnect = cb => {
+    if (!self.connected) return cb()
+    queue("quit", {}, cb)
+  }
+
+  self.connectStream = stream => streamConnect(toPull.duplex(stream))
+  self.connectPullStream = stream => streamConnect(stream)
 
   self.login = (user, pw, cb) => {
     queue("login", {

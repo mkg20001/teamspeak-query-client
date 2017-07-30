@@ -88,6 +88,35 @@ pull.parser = function Parser() {
   })
 }
 
+pull.parserServer = function Parser() {
+  let loc = -2
+  return queue(function (end, line, cb) {
+    if (end) return cb(end)
+    if (loc) return cb(null, null, loc++)
+    let cmd = line.split(" ").shift()
+    let res = line.split(" ").slice(1).join(" ").split("|").map(line => {
+      line = line.split(" ")
+      let res = {}
+      line.forEach(line => {
+        const eqPos = line.indexOf("=")
+        if (eqPos != -1) {
+          const key = escaper(line.substr(0, eqPos), decode_re)
+          let val = escaper(line.substr(eqPos + 1), decode_re)
+          if (parseInt(val, 10) == val) val = parseInt(val, 10)
+          res[key] = val
+        } else {
+          res[line] = true
+        }
+      })
+      return res
+    })
+    return cb(null, {
+      cmd,
+      data: res
+    })
+  })
+}
+
 pull.pack = function Packer() {
   return queue(function (end, data, cb) {
     if (end) return cb(end)
