@@ -11,6 +11,14 @@ function FakeServer(opt) {
     //throw if something isn't like it should be
   }
 
+  let targets = []
+
+  self.addTarget = (cmd, data) =>
+    targets.push({
+      cmd,
+      data
+    })
+
   self.createStream = _cb => {
     let client = {}
     const socketToClient = queue((end, data, cb) => cb(end, data))
@@ -83,6 +91,7 @@ function FakeServer(opt) {
             client.auth = false
             err(512, "wrong username or password")
           }
+          return
         }
         switch (data.cmd) {
         case "quit":
@@ -95,6 +104,11 @@ function FakeServer(opt) {
           return cb(true)
           break;
         }
+        if (targets.length) {
+          const t = targets.shift()
+          if (t.cmd != data.cmd) return assertError(t.cmd + " was supposed to be called but " + data.cmd + " got called")
+          return ok(t.data)
+        } else return assertError(data.cmd + " was called but it wasn't planned to be called")
       }, {
         sendMany: true
       }),
@@ -102,7 +116,7 @@ function FakeServer(opt) {
       queue(function (end, data, cb) {
         if (end) return cb(end)
         if (first)
-          cb(null, ["TS3", "Welcome", data])
+          cb(null, ["TS3", "Welcome", data], first = false)
         else
           cb(null, [data])
       }, {

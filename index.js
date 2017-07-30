@@ -149,6 +149,11 @@ function TeamSpeakQueryClient(opt) {
   }
 
   self.cmd = (cmd, args, bools, cb) => {
+    if (typeof args == "function") {
+      cb = args
+      args = {}
+      bools = []
+    }
     if (typeof bools == "function") {
       cb = bools
       bools = null

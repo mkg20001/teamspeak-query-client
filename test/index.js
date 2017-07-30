@@ -23,6 +23,39 @@ describe("query", () => {
       q.login("serveradmin", "pw123", err => err ? next(err) : true)
       q.disconnect()
     })
+
+    it("should login, set the nickname and get the clientlist", next => {
+      let fake = new FakeServer({
+        login: ["serveradmin", "pw123"]
+      })
+      let cllist = [{
+          args: {
+            clid: 1,
+            cid: 1,
+            client_database_id: 1,
+            client_nickname: "Some Guy"
+          }
+        },
+        {
+          args: {
+            clid: 2,
+            cid: 2,
+            client_database_id: 2,
+            client_nickname: "Another Guy"
+          }
+        }
+      ]
+      fake.addTarget("clientupdate")
+      fake.addTarget("clientlist", cllist)
+      const q = new Query()
+      q.connectPullStream(fake.createStream(next))
+      q.login("serveradmin", "pw123", err => err ? next(err) : true)
+      q.cmd("clientupdate", {
+        client_nickname: "test"
+      }, err => err ? next(err) : true)
+      q.cmd("clientlist", (err, res) => err ? next(err) : assert.deepEqual(cllist.map(c => c.args), res, "list differs"))
+      q.disconnect()
+    })
   })
 })
 
