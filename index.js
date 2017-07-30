@@ -64,6 +64,12 @@ function TeamSpeakQueryClient(opt) {
             self.emit("notify", ev, res[0])
             return read(null, next)
           }
+          if (res.length == 1 && res[0].error && (res[0].id == 3352 || res[0].id == 3329)) { //you are flood-banned
+            const e = new Error("FloodError: " + res[0].msg)
+            e.id = res[0].id
+            self.emit("connect:done", e)
+            return
+          }
           if (!cur) {
             log("got response with no request", res)
             return read(end, next)
@@ -113,10 +119,15 @@ function TeamSpeakQueryClient(opt) {
 
   function streamConnect(stream) {
     self.connected = true
+    let first = true
     self.stream = pull( //glue it together
       stream.source,
       mods.byLine(),
       pull.map(d => {
+        if (first) {
+          setTimeout(() => self.emit("connect:done"), 100)
+          first = false
+        }
         log("raw_in", d)
         return d
       }),
@@ -136,10 +147,11 @@ function TeamSpeakQueryClient(opt) {
   self.connect = cb => {
     const conn = net.connect(opt.port, opt.host, err => {
       if (err) return cb(err)
+
       const stream = toPull.duplex(conn)
       streamConnect(stream)
       log("connected", opt)
-      cb()
+      self.once("connect:done", cb)
     })
   }
 

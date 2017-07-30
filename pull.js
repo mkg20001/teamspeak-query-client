@@ -52,11 +52,16 @@ let encode_re = [
 
 pull.byLine = function LineByLine() {
   let data = ""
+  let ended
   return queue(function (end, chunk, cb) {
-    if (end) return cb(end)
-    data += chunk
+    if (ended) return cb(end)
+    data += chunk ? chunk : ""
+    if (end) {
+      if (data) ended = end
+      else return cb(end)
+    }
     let lines = data.split("\n\r")
-    data = lines.pop()
+    data = ended ? "" : lines.pop()
     return cb(null, lines)
   }, {
     sendMany: true
@@ -67,7 +72,10 @@ pull.parser = function Parser() {
   let loc = -2
   return queue(function (end, line, cb) {
     if (end) return cb(end)
-    if (loc) return cb(null, null, loc++)
+    if (loc) {
+      loc++
+      if (!line.startsWith("error")) return cb(null, null)
+    }
     let res = line.split("|").map(line => {
       line = line.split(" ")
       let res = {}
