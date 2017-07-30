@@ -1,4 +1,5 @@
 # teamspeak-query-client
+
 [![Build Status](https://travis-ci.org/mkg20001/teamspeak-query-client.svg?branch=master)](https://travis-ci.org/mkg20001/teamspeak-query-client)
 [![codecov](https://codecov.io/gh/mkg20001/teamspeak-query-client/branch/master/graph/badge.svg)](https://codecov.io/gh/mkg20001/teamspeak-query-client)
 
