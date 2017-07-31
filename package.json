@@ -1,6 +1,6 @@
 {
   "name": "teamspeak-query-client",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "TeamSpeak Query Client that works",
   "main": "index.js",
   "scripts": {
