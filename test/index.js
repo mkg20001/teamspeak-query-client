@@ -116,6 +116,18 @@ describe("query", () => {
         throw err
       }).to.throw("ServerError: fatal") && q.disconnect())
     })
+
+    it("should handle flood ban", next => {
+      const stream = {
+        sink: pull.drain(() => {}),
+        source: pull.values(["error id=3329 msg=connection\\sfailed,\\syou\\sare\\sbanned extra_msg=you\\smay\\sretry\\sin\\s600\\sseconds"])
+      }
+      const q = new Query()
+      q.once("connect:done", err => expect(() => {
+        throw err
+      }).to.throw("FloodError: connection failed, you are banned") && next())
+      q.connectPullStream(stream)
+    })
   })
 })
 
