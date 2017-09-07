@@ -17,7 +17,7 @@
   "author": "Maciej Krüger <mkg20001@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "debug": "^2.6.8",
+    "debug": "^3.0.1",
     "pull-queue": "^0.1.3",
     "pull-stream": "^3.6.0",
     "stream-to-pull-stream": "^1.7.2",
@@ -27,7 +27,7 @@
     "chai": "^4.1.0",
     "mocha": "^3.4.2",
     "nyc": "^11.1.0",
-    "sinon": "^2.4.1",
+    "sinon": "^3.2.1",
     "sinon-chai": "^2.12.0"
   },
   "repository": {
