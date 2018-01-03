@@ -1,6 +1,6 @@
 const queue = require('pull-queue')
 const pull = require('pull-stream')
-const mod = require('../pull')
+const mod = require('../src/pull')
 
 const assert = require('assert')
 

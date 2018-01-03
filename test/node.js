@@ -7,8 +7,8 @@ chai.should()
 const expect = chai.expect
 const assert = require('assert')
 
-const Query = require('..')
-const mod = require('../pull')
+const Query = require('../src')
+const mod = require('../src/pull')
 const pull = require('pull-stream')
 const FakeServer = require('./fake-ts3')
 
