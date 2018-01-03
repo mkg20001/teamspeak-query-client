@@ -1,5 +1,8 @@
 'use strict'
 
+/* eslint-env mocha */
+/* eslint-disable */
+
 const pull = require('pull-stream')
 const net = require('net')
 const toPull = require('stream-to-pull-stream')

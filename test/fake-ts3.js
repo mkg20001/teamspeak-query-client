@@ -1,3 +1,7 @@
+'use strict'
+
+/* eslint-disable */
+
 const queue = require('pull-queue')
 const pull = require('pull-stream')
 const mod = require('../src/pull')

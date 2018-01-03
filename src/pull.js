@@ -1,5 +1,8 @@
 'use strict'
 
+/* eslint-env mocha */
+/* eslint-disable */
+
 const queue = require('pull-queue')
 
 const pull = module.exports
