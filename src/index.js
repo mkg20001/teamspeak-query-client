@@ -1,7 +1,6 @@
 'use strict'
 
 /* eslint-env mocha */
-/* eslint-disable */
 
 const pull = require('pull-stream')
 const net = require('net')
@@ -30,7 +29,7 @@ function TeamSpeakQueryClient (opt) {
     }
     data can also be an array that will be encoded and joined with |
     */
-    log('queued', cmd, cmd == 'login' ? '*' : args)
+    log('queued', cmd, cmd === 'login' ? '*' : args)
     que.push({
       data: {
         cmd,
@@ -58,7 +57,7 @@ function TeamSpeakQueryClient (opt) {
             return (ended = end)
           }
           if (ended) return read(ended = end)
-          if (res.length == 1 && Object.keys(res[0])[0].startsWith('notify')) {
+          if (res.length === 1 && Object.keys(res[0])[0].startsWith('notify')) {
             // notify event (see "servernotifyregister" command)
             let ev = Object.keys(res[0])[0].substr('notify'.length)
             delete res[0]['notify' + ev]
@@ -67,7 +66,7 @@ function TeamSpeakQueryClient (opt) {
             self.emit('notify', ev, res[0])
             return read(null, next)
           }
-          if (res.length == 1 && res[0].error && (res[0].id == 3352 || res[0].id == 3329)) { // you are flood-banned
+          if (res.length === 1 && res[0].error && (res[0].id === 3352 || res[0].id === 3329)) { // you are flood-banned
             const e = new Error('FloodError: ' + res[0].msg)
             e.id = res[0].id
             self.emit('connect:done', e)
@@ -78,7 +77,7 @@ function TeamSpeakQueryClient (opt) {
             return read(end, next)
           }
           log('got response', res)
-          if (res.length == 1 && res[0].error) {
+          if (res.length === 1 && res[0].error) {
             // error response, done with request
             let err = res[0]
             if (!err.id) cur.err = null
@@ -103,7 +102,7 @@ function TeamSpeakQueryClient (opt) {
 
         function doSend () {
           cur = que.shift()
-          log('sending', cur.data.cmd == 'login' ? '*' : cur.data)
+          log('sending', cur.data.cmd === 'login' ? '*' : cur.data)
           self.emit('que:do')
           return cb(null, cur.data)
         }

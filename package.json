@@ -31,7 +31,6 @@
     "aegir": "^13.1.0",
     "chai": "^4.1.2",
     "pull-pair": "^1.1.0",
-    "sinon": "^5.0.2",
     "sinon-chai": "^3.0.0"
   },
   "repository": {

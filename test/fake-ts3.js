@@ -4,6 +4,7 @@ const Pushable = require('pull-pushable')
 const pull = require('pull-stream')
 const mod = require('../src/pull')
 const Pair = require('pull-pair')
+const util = require('util')
 
 const assert = require('assert')
 
@@ -13,9 +14,7 @@ function FakeServer (opt) {
   self.assertOk = () => {
     // throw if something isn't like it should be
     if (targets.length) {
-      console.error('TARGETS LEFT')
-      console.log(targets)
-      throw new Error('Targets left')
+      throw new Error('Targets left: ' + util.inspect(targets, { depth: null }))
     }
   }
 
@@ -53,7 +52,7 @@ function FakeServer (opt) {
 
         function assertError (err) {
           _cb(new Error('TestError: ' + err))
-          return cb(true)
+          return cb(true) // eslint-disable-line standard/no-callback-literal
         }
 
         function ok (res) {
@@ -91,7 +90,7 @@ function FakeServer (opt) {
         }
 
         if (opt.login && !client.auth) {
-          if (data.cmd != 'login') return assertError('Did not login')
+          if (data.cmd !== 'login') return assertError('Did not login')
           if (data.data[0][opt.login[0]] && data.data[0][opt.login[1]]) {
             client.auth = true
             ok()
@@ -109,14 +108,15 @@ function FakeServer (opt) {
               return _cb(e)
             }
             _cb()
-            return cb(true)
-            break
+            return cb(true) // eslint-disable-line standard/no-callback-literal
+          default: {
+            if (targets.length) {
+              const t = targets.shift()
+              if (t.cmd !== data.cmd) return assertError(t.cmd + ' was supposed to be called but ' + data.cmd + ' got called')
+              return ok(t.data)
+            } else return assertError(data.cmd + " was called but it wasn't planned to be called")
+          }
         }
-        if (targets.length) {
-          const t = targets.shift()
-          if (t.cmd != data.cmd) return assertError(t.cmd + ' was supposed to be called but ' + data.cmd + ' got called')
-          return ok(t.data)
-        } else return assertError(data.cmd + " was called but it wasn't planned to be called")
       }, err => {
         out.end(err)
         try {

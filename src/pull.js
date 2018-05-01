@@ -33,7 +33,7 @@ let decodeRegex = [
   [/\\r/g, '\r'],
   [/\\t/g, '\t'],
   [/\\v/g, '\v'],
-  [/\\\//g, '\/'],
+  [/\\\//g, '\/'], // eslint-disable-line no-useless-escape
   [/\\\\/g, '\\']
 ]
 let encodeRegex = [
@@ -90,7 +90,7 @@ _pull.parser = function Parser () {
           if (eqPos !== -1) {
             const key = escaper(line.substr(0, eqPos), decodeRegex)
             let val = escaper(line.substr(eqPos + 1), decodeRegex)
-            if (parseInt(val, 10) == val) val = parseInt(val, 10)
+            if (parseInt(val, 10).toString() === val) val = parseInt(val, 10)
             res[key] = val
           } else {
             res[line] = true
@@ -114,7 +114,7 @@ _pull.parserServer = function Parser () {
         if (eqPos !== -1) {
           const key = escaper(line.substr(0, eqPos), decodeRegex)
           let val = escaper(line.substr(eqPos + 1), decodeRegex)
-          if (parseInt(val, 10) == val) val = parseInt(val, 10)
+          if (parseInt(val, 10).toString() === val) val = parseInt(val, 10)
           res[key] = val
         } else {
           res[line] = true
