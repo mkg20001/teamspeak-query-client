@@ -1,12 +1,11 @@
 'use strict'
 
 /* eslint-env mocha */
-/* eslint-disable */
 
-const queue = require('pull-queue')
+const Pushable = require('pull-pushable')
 
-const pull = module.exports
-const _pull = require('pull-stream')
+const pull = require('pull-stream')
+const _pull = module.exports
 
 /* const map = {
   "\\s": " ",
@@ -22,11 +21,11 @@ const _pull = require('pull-stream')
 
 function escaper (s, re) {
   s = String(s)
-  re.forEach(r => s = s.replace(r[0], r[1]))
+  re.forEach(r => (s = s.replace(r[0], r[1])))
   return s
 }
 
-let decode_re = [
+let decodeRegex = [
   [/\\s/g, ' '],
   [/\\p/g, '|'],
   [/\\n/g, '\n'],
@@ -37,7 +36,7 @@ let decode_re = [
   [/\\\//g, '\/'],
   [/\\\\/g, '\\']
 ]
-let encode_re = [
+let encodeRegex = [
   [/\\/g, '\\\\'],
   [/\//g, '\\/'],
   [/\|/g, '\\p'],
@@ -49,68 +48,72 @@ let encode_re = [
   [/ /g, '\\s']
 ]
 /* for (var decoded in map) {
-  decode_re.push([new RegExp(map[decoded].replace(/\\/g,"\\\\"), "g"), decoded]) // /encoded/g -> decoded
-  encode_re.push([new RegExp(decoded.replace(/\\/g,"\\\\"), "g"), map[decoded]]) // /decoded/g -> encoded
+  decodeRegex.push([new RegExp(map[decoded].replace(/\\/g,"\\\\"), "g"), decoded]) // /encoded/g -> decoded
+  encodeRegex.push([new RegExp(decoded.replace(/\\/g,"\\\\"), "g"), map[decoded]]) // /decoded/g -> encoded
 } */
 
-pull.byLine = function LineByLine () {
+_pull.splitCRLF = () => {
   let data = ''
-  let ended
-  return queue(function (end, chunk, cb) {
-    if (ended) return cb(end)
-    data += chunk ? chunk : ''
-    if (end) {
-      if (data) ended = end
-      else return cb(end)
-    }
-    let lines = data.split('\n\r')
-    data = ended ? '' : lines.pop()
-    return cb(null, lines)
-  }, {
-    sendMany: true
-  })
-}
+  let source = Pushable()
 
-pull.parser = function Parser () {
-  let loc = -2
-  return queue(function (end, line, cb) {
-    if (end) return cb(end)
-    if (loc) {
-      loc++
-      if (!line.startsWith('error')) return cb(null, null)
-    }
-    let res = line.split('|').map(line => {
-      line = line.split(' ')
-      let res = {}
-      line.forEach(line => {
-        const eqPos = line.indexOf('=')
-        if (eqPos != -1) {
-          const key = escaper(line.substr(0, eqPos), decode_re)
-          let val = escaper(line.substr(eqPos + 1), decode_re)
-          if (parseInt(val, 10) == val) val = parseInt(val, 10)
-          res[key] = val
-        } else {
-          res[line] = true
-        }
-      })
-      return res
+  return {
+    source,
+    sink: pull.drain(chunk => {
+      data += chunk || ''
+      let lines = data.split('\n\r')
+      data = lines.pop()
+      lines.forEach(l => source.push(l))
+    }, err => {
+      if (data) source.push(data)
+      data = null
+      source.end(err)
     })
-    return cb(null, res)
-  })
+  }
 }
 
-pull.parserServer = function Parser () {
-  return queue(function (end, line, cb) {
-    if (end) return cb(end)
+_pull.parser = function Parser () {
+  let loc = -2
+  let source = Pushable()
+
+  return {
+    source,
+    sink: pull.drain(line => {
+      if (loc) {
+        loc++
+        if (!line.startsWith('error')) return
+      }
+      let res = line.split('|').map(line => {
+        line = line.split(' ')
+        let res = {}
+        line.forEach(line => {
+          const eqPos = line.indexOf('=')
+          if (eqPos !== -1) {
+            const key = escaper(line.substr(0, eqPos), decodeRegex)
+            let val = escaper(line.substr(eqPos + 1), decodeRegex)
+            if (parseInt(val, 10) == val) val = parseInt(val, 10)
+            res[key] = val
+          } else {
+            res[line] = true
+          }
+        })
+        return res
+      })
+      source.push(res)
+    }, e => source.end(e))
+  }
+}
+
+_pull.parserServer = function Parser () {
+  return pull.map(line => {
     let cmd = line.split(' ').shift()
     let res = line.split(' ').slice(1).join(' ').split('|').map(line => {
       line = line.split(' ')
       let res = {}
       line.forEach(line => {
         const eqPos = line.indexOf('=')
-        if (eqPos != -1) {
-          const key = escaper(line.substr(0, eqPos), decode_re)
-          let val = escaper(line.substr(eqPos + 1), decode_re)
+        if (eqPos !== -1) {
+          const key = escaper(line.substr(0, eqPos), decodeRegex)
+          let val = escaper(line.substr(eqPos + 1), decodeRegex)
           if (parseInt(val, 10) == val) val = parseInt(val, 10)
           res[key] = val
         } else {
@@ -119,33 +122,25 @@ pull.parserServer = function Parser () {
       })
       return res
     })
-    return cb(null, {
+    return {
       cmd,
       data: res
-    })
+    }
   })
 }
 
-pull.packer = function Packer () {
-  return queue(function (end, data, cb) {
-    if (end) return cb(end)
-    if (!Array.isArray(data.args)) data.args = [data.args]
-    return cb(null, data.cmd + ' ' + data.args.map(data => [(data.bools || []).map(d => escaper(d, encode_re)).join(' '),
-      Object.keys(data.args || {}).map(k => escaper(k, encode_re) + '=' + escaper(data.args[k], encode_re)).join(' ')
-    ].filter(e => e.length).join(' ')).join('|'))
-  })
-}
+_pull.packer = () => pull.map(data => {
+  if (!Array.isArray(data.args)) data.args = [data.args]
+  return data.cmd + ' ' + data.args.map(data => [(data.bools || []).map(d => escaper(d, encodeRegex)).join(' '),
+    Object.keys(data.args || {}).map(k => escaper(k, encodeRegex) + '=' + escaper(data.args[k], encodeRegex)).join(' ')
+  ].filter(e => e.length).join(' ')).join('|')
+})
 
-pull.packerServer = function Packer () {
-  return queue(function (end, data, cb) {
-    if (end) return cb(end)
-    if (!Array.isArray(data)) data = [data]
-    return cb(null, data.map(data => [(data.bools || []).map(d => escaper(d, encode_re)).join(' '),
-      Object.keys(data.args || {}).map(k => escaper(k, encode_re) + '=' + escaper(data.args[k], encode_re)).join(' ')
-    ].filter(e => e.length).join(' ')).join('|'))
-  })
-}
+_pull.packerServer = () => pull.map(data => {
+  if (!Array.isArray(data)) data = [data]
+  return data.map(data => [(data.bools || []).map(d => escaper(d, encodeRegex)).join(' '),
+    Object.keys(data.args || {}).map(k => escaper(k, encodeRegex) + '=' + escaper(data.args[k], encodeRegex)).join(' ')
+  ].filter(e => e.length).join(' ')).join('|')
+})
 
-pull.joinLine = function JoinLines () {
-  return _pull.map(d => d + '\n\r')
-}
+_pull.addCRLF = () => pull.map(d => d + '\n\r')

@@ -1,10 +1,9 @@
 'use strict'
 
-/* eslint-disable */
-
-const queue = require('pull-queue')
+const Pushable = require('pull-pushable')
 const pull = require('pull-stream')
 const mod = require('../src/pull')
+const Pair = require('pull-pair')
 
 const assert = require('assert')
 
@@ -30,26 +29,26 @@ function FakeServer (opt) {
 
   self.createStream = _cb => {
     let client = {}
-    const socketToClient = queue((end, data, cb) => cb(end, data))
-    const socketToServer = queue((end, data, cb) => cb(end, data))
+    const socketToClient = Pair()
+    const socketToServer = Pair()
 
     assert(_cb, 'cb is undefined')
 
     let first = true
 
+    let out = Pushable()
+
     pull(
       socketToServer.source,
-      mod.byLine(),
+      mod.splitCRLF(),
       mod.parserServer(),
-      queue(function (end, data, cb) {
-        if (end) {
-          try {
-            self.assertOk()
-          } catch (e) {
-            return _cb(e)
+      pull.drain(data => {
+        const cb = (err, data) => {
+          if (err) {
+            out.end(err)
+          } else if (data) {
+            data.forEach(data => out.push(data))
           }
-          _cb()
-          return cb(true)
         }
 
         function assertError (err) {
@@ -118,21 +117,28 @@ function FakeServer (opt) {
           if (t.cmd != data.cmd) return assertError(t.cmd + ' was supposed to be called but ' + data.cmd + ' got called')
           return ok(t.data)
         } else return assertError(data.cmd + " was called but it wasn't planned to be called")
-      }, {
-        sendMany: true
-      }),
-      mod.packerServer(),
-      queue(function (end, data, cb) {
-        if (end) return cb(end)
-        if (first) {
-          cb(null, ['TS3', 'Welcome', data], first = false)
-        } else {
-          cb(null, [data])
+      }, err => {
+        out.end(err)
+        try {
+          self.assertOk()
+        } catch (e) {
+          return _cb(e)
         }
-      }, {
-        sendMany: true
+        _cb()
+      })
+    )
+
+    pull(
+      out,
+      mod.packerServer(),
+      pull.map(data => {
+        if (first) {
+          first = false
+          return 'TS3\n\rWelcome\n\r' + data
+        }
+        return data
       }),
-      mod.joinLine(),
+      mod.addCRLF(),
       socketToClient.sink
     )
     return {

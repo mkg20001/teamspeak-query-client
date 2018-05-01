@@ -125,7 +125,7 @@ function TeamSpeakQueryClient (opt) {
     let first = true
     self.stream = pull( // glue it together
       stream.source,
-      mods.byLine(),
+      mods.splitCRLF(),
       pull.map(d => {
         if (first) {
           setTimeout(() => self.emit('connect:done'), 100)
@@ -141,7 +141,7 @@ function TeamSpeakQueryClient (opt) {
         log('raw_out', d.startsWith('login') ? 'login *** ***' : d)
         return d
       }),
-      mods.joinLine(),
+      mods.addCRLF(),
       stream.sink
     )
     self.emit('connected')
