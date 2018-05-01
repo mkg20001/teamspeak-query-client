@@ -1,3 +1,13 @@
+<a name="0.1.6"></a>
+## [0.1.6](https://github.com/mkg20001/teamspeak-query-client/compare/v0.1.5...v0.1.6) (2018-05-01)
+
+
+### Features
+
+* Fully rewrite without pull-queue - codestyle ([d4b253b](https://github.com/mkg20001/teamspeak-query-client/commit/d4b253b))
+
+
+
 <a name="0.1.5"></a>
 ## [0.1.5](https://github.com/mkg20001/teamspeak-query-client/compare/v0.1.4...v0.1.5) (2018-01-03)
 
